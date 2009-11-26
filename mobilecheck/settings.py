@@ -71,4 +71,7 @@ INSTALLED_APPS = (
     'mobilecheck.web',
 )
 
-from localsettings import *
+try:
+    from localsettings import *
+except ImportError:
+    print 'No localsettings.'
