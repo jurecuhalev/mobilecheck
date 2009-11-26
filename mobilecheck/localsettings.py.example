@@ -13,3 +13,5 @@ MEDIA_URL = ''
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+KEEPFILES = False
+UPLOADS_DIR = '/home/gandalf/mobilecheck/uploads/'

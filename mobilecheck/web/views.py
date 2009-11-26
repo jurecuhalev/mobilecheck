@@ -1,36 +1,38 @@
 # -*- coding: utf-8 -*-
+import time
 from django.shortcuts import render_to_response
 from django import forms
-from xlrd import open_workbook
+
+from django.conf import settings
+from mobilecheck.utils import simobil
+
 
 class UploadForm(forms.Form):
-  bill = forms.FileField()
+  racun = forms.FileField()
 
 def index(request):
+  def _save_file(onlinefile):
+    f = open(settings.UPLOADS_DIR+str(time.time())+'_'+onlinefile.name, 'wb')
+    f.write(onlinefile.read())
+    f.close()
+  
+    return settings.UPLOADS_DIR+str(time.time())+'_'+onlinefile.name
+  
   if request.method == 'POST': # If the form has been submitted...
       form = UploadForm(request.POST, request.FILES) # A form bound to the POST data
       if form.is_valid(): # All validation rules pass
-          # Process the data in form.cleaned_data
-          # ...
-          process_bill(request.FILES['bill'])
-          return HttpResponseRedirect('/thanks/') # Redirect after POST
+          if settings.KEEPFILES:
+            storedfile = _save_file(request.FILES['racun'])
+          else:
+            storedfile = request.FILES['racun']
+          
+          print storedfile
+          summary = simobil.process(storedfile)
+          return render_to_response('processed.html',
+                                    {'summary': summary})
   else:
       form = UploadForm() # An unbound form
 
   return render_to_response('index.html', {
       'form': form,
   })
-    
-    
-    
-def process_bill(bill):
-  print bill
-
-
-
-def main():
-  aString = open('../samples/sample1.xls','rb').read()
-  print open_workbook(file_contents=aString)
-
-if __name__ == '__main__':
-  main()

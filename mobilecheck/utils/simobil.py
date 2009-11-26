@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/python
 
 from xml.etree import ElementTree
@@ -9,28 +10,17 @@ import re
 datum_re = re.compile('^(\d{2})\.(\d{2})\.$')
 ura_re = re.compile('^(\d{2}):(\d{2})$')
 trajanje_re = re.compile('^(?:(\d\d):(\d\d):(\d\d)|(\d+),(\d+)(K|M)B)$')
-year_re = re.compile('^specifikacija_(\d\d)\d+_\d+.xml$')
-
-kb = 0.0
 
 class ParseError(Exception):
   pass
 
-def per_peer(f, cost_per_peer):
-  global kb
-  #print '#' + '=' *40
-  #print '#' + sys.argv[1]
-  #print '#' + '-' *40
-  
-  #m = year_re.match(f)
-  #if not m:
-  #  raise ParseError("could not find year")
-  #year = int('20' + m.group(1))
-  year = 2009
-  
+def xmlparse(f):
   tree = ElementTree.parse(f)
+  year = 2009
+  entries = list()
   
   for x in tree.findall('.//Zapis'):
+    kb = 0.0
     datum = x.find('Datum').text
     ura = x.find('Ura').text
     opis = x.find('Opis').text
@@ -39,9 +29,6 @@ def per_peer(f, cost_per_peer):
     trajanje = x.find('Trajanje').text
     amount = decimal.Decimal(x.find('EUR').text)
     
-    cur_sum, num = cost_per_peer.get((cifra, opis, operater), (decimal.Decimal(),0))
-    cost_per_peer[(cifra, opis, operater)] = (cur_sum+amount, num+1)
-    #print (datum, ura, opis, cifra, operater, trajanje, amount)
     event_date = map(int, datum_re.match(datum).groups())
     event_time = map(int, ura_re.match(ura).groups())
     
@@ -59,21 +46,91 @@ def per_peer(f, cost_per_peer):
     else:
       # should not get here
       raise ParseError(trajanje)
+        
+    #print [timestamp, opis, cifra, operater, trajanje, amount]
     
-    print [timestamp, opis, cifra, operater, trajanje, amount]
+    e = {'timestamp':timestamp, 
+         'description': opis, 
+         'number': cifra, 
+         'provider': operater, 
+         'length': trajanje,
+         'datakb': kb,
+         'amount': amount}
+    
+    entries.append(e)
+  return entries
+
+def get_sms_count(entries):
+  sms_counter = 0
+  for e in entries:
+    if e.get('description') == u'SMS sporo\u010dilo':
+      sms_counter += 1
+      
+  return sms_counter
+
+def get_data(entries):
+  data_kb = 0
+  for e in entries:
+    if e.get('datakb') > 0:
+      data_kb += e.get('datakb')
+      
+  return data_kb
   
-  return cost_per_peer
+def get_klici_stacionarno(entries):
+  calls_length = datetime.timedelta(0)
+  for e in entries:
+    if e.get('description') == 'Klic v stacionarno omr.':
+      calls_length = calls_length + e.get('length')
+  return calls_length
+  
+  
+def get_klici_simobil(entries):
+  calls_length = datetime.timedelta(0)
+  for e in entries:
+    if e.get('description') == u'Klic v omre\u017eje Si.mobil':
+      calls_length = calls_length + e.get('length')
+  return calls_length
 
+def get_klici_drugomobilno(entries):
+  calls_length = datetime.timedelta(0)
+  for e in entries:
+    if e.get('description') == 'Klic v drugo mobilno omr.':
+      calls_length = calls_length + e.get('length')
+  return calls_length
+
+def process(f):
+  print f
+  entries = xmlparse(f)
+  summary = [
+  
+    {'description': u'Klici v omre\u017eje Si.mobil',
+     'value': get_klici_simobil(entries)
+    },
+  
+    {'description': u'Klici v druga mobilna omrežja',
+     'value': get_klici_drugomobilno(entries)
+    },
+
+    {'description': u'Klici v stacionarna omrežja',
+     'value': get_klici_stacionarno(entries)
+    },
+  
+    {'description' : u'Število SMS sporočil',
+     'value': get_sms_count(entries)},
+    {'description': 'Prenos podatkov (v kb)',
+     'value': get_data(entries)}]
+  
+  
+  return summary
+  
 def main():
-  cost = {}
-  for x in sys.argv[1:]:
-    cost = per_peer(x, cost)
-  costs = sorted([(v, k) for (k, v) in cost.iteritems()])
-  total = sum([i[0] for i in cost.itervalues()])
-  for entry in costs[-10:]:
-    print '%.1f\t%s\t%s\t%s' % (entry[0][0]/total*100, entry[0][0], entry[0][1], entry[1])
-  print '#' + '-' *40
-  print 'KB', kb
-
+  entries = xmlparse(sys.argv[1])
+  
+  sms_count = get_sms_count(entries)
+  data = get_data(entries)
+  print "SMS count", sms_count
+  print "Data transfer", get_data(entries), 'kb'
+  print "Klici other", get_klici_drugo(entries)
+  
 if __name__ == "__main__":
   main()
