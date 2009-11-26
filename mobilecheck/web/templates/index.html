@@ -1,11 +1,12 @@
-{% block contents %}
-<p>Si.mobil accounting checker</p>
+{% extends "base.html" %}
 
-<p>Please upload your .xls file:</p>
+{% block content %}
+<div class="generic nineforty">
+  <h2>Naložite .xml datoteko <em>(specifikacija.. .xml)</em></h2>
 
 <form action="." method="post" accept-charset="utf-8" enctype="multipart/form-data">
   {{ form.as_p }}
-  <p><input type="submit" value="Continue &rarr;"></p>
+  <p><input type="submit" value="Pošlji &rarr;"></p>
 </form>
 
 {% endblock %}

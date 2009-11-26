@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+
+<table>
+  <tr>
+    <th>Postavka</th>
+    <th>Količina</th>
+    <!-- <th>Vrednost (v delu)</th> -->
+  </tr>
+  
+  {% for entry in summary %}
+    <tr>
+      <td>{{ entry.description }}</td>
+      <td>{{ entry.value }}</td>
+    </tr>
+  {% endfor %}
+
+</table>
+
+{% endblock %}
