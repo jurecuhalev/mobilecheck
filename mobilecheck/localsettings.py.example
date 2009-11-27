@@ -13,5 +13,6 @@ MEDIA_URL = ''
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+#useful if we need to debug what users are uploading
 KEEPFILES = False
 UPLOADS_DIR = '/home/gandalf/mobilecheck/uploads/'
