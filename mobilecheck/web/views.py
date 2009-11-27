@@ -23,8 +23,8 @@ def index(request):
       if form.is_valid(): # All validation rules pass
           if settings.KEEPFILES:
             storedfile = _save_file(request.FILES['racun'])
-          else:
-            storedfile = request.FILES['racun']
+          request.FILES['racun'].seek(0)
+          storedfile = request.FILES['racun']
           
           print storedfile
           summary = simobil.process(storedfile)
